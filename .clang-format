@@ -1,0 +1,17 @@
+Language: Cpp
+Standard: Latest
+IndentCaseBlocks: true
+IndentCaseLabels: true
+IndentWidth: 4
+TabWidth: 4
+UseTab: Never
+PointerAlignment: Left
+MaxEmptyLinesToKeep: 2
+BreakTemplateDeclarations: Yes
+ColumnLimit: 100
+BreakBeforeBraces: Allman
+
+AllowShortBlocksOnASingleLine: Always
+AllowShortIfStatementsOnASingleLine: WithoutElse
+AllowShortFunctionsOnASingleLine: InlineOnly
+
