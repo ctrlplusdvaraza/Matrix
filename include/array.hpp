@@ -1,75 +1,131 @@
 #pragma once
 
 #include <algorithm>
-#include <utility>
 #include <iostream>
+#include <iterator>
+#include <utility>
 #include <iterator>
 
 namespace mtx {
 
-template<typename Iter, typename T>
-concept IteratorOf = std::same_as<std::iter_value_t<Iter>, T>;
+template <typename T>
+class ArrayBuffer {
+  protected:
+    T* data_ = nullptr;
+    std::size_t size_ = 0;
+    std::size_t capacity_ = 0;
 
-template<typename T>
-class Array {
+  protected:
+    ArrayBuffer() = default;
+
+    ArrayBuffer(std::size_t capacity) : data_(allocate(capacity)), capacity_(capacity) {}
+
+    ArrayBuffer(const ArrayBuffer&) = delete;
+
+    ArrayBuffer& operator=(const ArrayBuffer&) = delete;
+
+    ArrayBuffer(ArrayBuffer&& other) noexcept
+        : data_(other.data_), size_(other.size_), capacity_(other.capacity_) {
+        other.data_ = nullptr;
+        other.size_ = 0;
+        other.capacity_ = 0;
+    };
+
+    ArrayBuffer& operator=(ArrayBuffer&& other) noexcept {
+        std::swap(data_, other.data_);
+        std::swap(size_, other.size_);
+        std::swap(capacity_, other.capacity_);
+        return *this;
+    }
+
+    ~ArrayBuffer() {
+        destroy(data_, data_ + size_);
+        ::operator delete(data_);
+    }
+
+  protected:
+    void construct(T* ptr, const T& value) { new (ptr) T(value); }
+
+    void construct(T* ptr, T&& value) { new (ptr) T(std::move(value)); }
+
+  private:
+    static T* allocate(std::size_t size) {
+        if (size == 0) { return nullptr; }
+
+        return static_cast<T*>(::operator new(sizeof(T) * size));
+    }
+
+    static void destroy(T* ptr) noexcept { ptr->~T(); }
+
+    static void destroy(T* begin, T* end) noexcept {
+        while (begin != end) {
+            destroy(begin);
+            ++begin;
+        }
+    }
+};
+
+template <typename T>
+class Array : private ArrayBuffer<T>{
+  private:
+    using ArrayBuffer<T>::data_;
+    using ArrayBuffer<T>::size_;
+    using ArrayBuffer<T>::capacity_;
+    using ArrayBuffer<T>::construct;
+
   public:
     Array() = default;
-
-    Array(std::initializer_list<T> init_list) : size_(init_list.size()), data_(allocate(size())) {
-        std::copy(init_list.begin(), init_list.end(), data_);
+    
+    Array(std::initializer_list<T> init_list) : ArrayBuffer(init_list.size()) {
+        for (const auto& item : init_list) {
+            construct(data_ + size_, item);
+            ++size_;
+        }
     }
 
-    template <typename Iter>
-    requires IteratorOf<Iter, T>
-    Array(std::size_t size, Iter elems_begin, Iter elems_end) : size_(size), data_(allocate(size)) {
-        std::copy(elems_begin, elems_end, data_);
+    template <std::forward_iterator Iter>
+    Array(Iter elems_begin, Iter elems_end) : ArrayBuffer(std::distance(elems_begin, elems_end)) {
+        for (auto iter = elems_begin; iter != elems_end; ++iter) {
+            construct(data_ + size_, *iter);
+            ++size_;
+        }
     }
 
-    Array(std::size_t size, const T& value = T{}) {
-        reallocate_and_fill(size, value);
+    Array(std::size_t size, const T& value = T{}) : ArrayBuffer(size) { 
+        while (size_ < capacity_) {
+            construct(data_ + size_, value);
+            ++size_;
+        }        
     }
 
-  public:
-    Array(const Array& other) : size_(other.size()), data_(allocate(size())) {
-        std::copy(other.begin(), other.end(), data_);
-    }
-
-    Array(Array&& other) {
-        swap(other);
+    Array(const Array& other) : ArrayBuffer(other.size_) {
+        while (size_ < other.size_) {
+            construct(data_ + size_, other.data_[size_]);
+            ++size_;
+        }
     }
 
     Array& operator=(const Array& other) {
-        if(this == &other) {
-            return *this;
-        }
-
-        Array temp(other);
-        swap(temp);
-
+        Array tmp(other);
+        std::swap(*this, tmp);
         return *this;
     }
 
-    Array& operator=(Array&& other) {
-        if(this == &other) {
-            return *this;
-        }
+    Array(Array&& other) = default;
 
-        swap(other);
+    Array& operator=(Array&& other) = default;
 
-        return *this;
-    }
-
-    ~Array() { deallocate(data_); }
+    ~Array() = default;
 
   public:
     T& operator[](std::size_t idx) { return data_[idx]; }
     const T& operator[](std::size_t idx) const { return data_[idx]; }
 
-    T* begin() { return data_; } 
-    const T* begin() const { return data_; } 
+    T* begin() { return data_; }
+    const T* begin() const { return data_; }
 
-    T* end() { return begin() + size(); } 
-    const T* end() const { return begin() + size(); } 
+    T* end() { return begin() + size(); }
+    const T* end() const { return begin() + size(); }
 
   public:
     std::size_t size() const { return size_; }
@@ -112,61 +168,11 @@ class Array {
         return temp;
     }
 
-  public:
-    void resize(std::size_t new_size, const T& value = T{}) {
-        reallocate_and_fill(new_size, value);
-    }
-
-    void fill(const T& value) {
-        std::fill(begin(), end(), value);
-    }
-
-  private:
     void swap(Array& other) {
         std::swap(data_, other.data_);
         std::swap(size_, other.size_);
+        std::swap(capacity_, other.capacity_);
     }
-
-    static T* allocate(std::size_t capacity) {
-        return new T[capacity];
-    }
-    static void deallocate(T* data) {
-        delete[] data;
-    }
-
-    void reallocate(std::size_t new_size) {
-        if (new_size == size()) {
-            return;
-        }
-
-        T* new_buffer = allocate(new_size);
-
-        if (begin() != nullptr) {
-            std::size_t n_to_copy = std::min(size_, new_size);
-            std::copy(begin(), begin() + n_to_copy, new_buffer);
-            deallocate(data_);
-        }
-
-        data_ = new_buffer;
-        size_ = new_size;
-    }
-
-    void reallocate_and_fill(std::size_t new_size, const T& value = T{}) {
-        std::size_t old_size = size();
-
-        reallocate(new_size);
-
-        T* first = begin() + old_size;
-        T* last  = begin() + new_size;
-
-        if (last > first) {
-            std::fill(first, last, value);
-        }
-    }
-
-  private:
-    std::size_t size_ = 0;
-    T* data_ = nullptr;
 };
 
 }; // namespace mtx
