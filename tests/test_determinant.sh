@@ -15,7 +15,7 @@ for size in 1 2 3 4 5 10 20 30 40 50 60 70 80 90 100; do
     expected_determinant=$(awk -v seed=$RANDOM 'BEGIN{srand(seed); printf "%.4f\n", (rand()*2000 - 1000)}')
     python3 tests/generate_matrix.py "$size" "$expected_determinant" > temp_file/test.txt
     our=$(build/Matrix < temp_file/test.txt)
-    ideal=$(build/tests/IdealDeterminant < temp_file/test.txt)
+    ideal=$(build/tests/EigenDeterminant < temp_file/test.txt)
 
     diff1=$(echo "$our - $expected_determinant" | bc -l)
     diff2=$(echo "$ideal - $expected_determinant" | bc -l)

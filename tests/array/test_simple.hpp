@@ -85,3 +85,52 @@ TEST(Constructor, MoveConstructor)
     EXPECT_EQ(arr2[3], "four");
     EXPECT_EQ(arr2[4], "five");
 }
+
+TEST(Assignment, CopyAssignment) 
+{
+    ArrayT<std::string> arr1 = {"one", "two", "three", "four", "five"};
+    ArrayT<std::string> arr2;
+    
+    arr2 = arr1;
+    
+    EXPECT_EQ(arr2.size(), 5);
+    EXPECT_EQ(arr2[0], "one");
+    EXPECT_EQ(arr2[1], "two");
+    EXPECT_EQ(arr2[2], "three");
+    EXPECT_EQ(arr2[3], "four");
+    EXPECT_EQ(arr2[4], "five");
+    
+    EXPECT_EQ(arr1.size(), 5);
+    EXPECT_EQ(arr1[0], "one");
+}
+
+TEST(Assignment, MoveAssignment) 
+{
+    ArrayT<std::string> arr1 = {"one", "two", "three", "four", "five"};
+    ArrayT<std::string> arr2;
+    
+    arr2 = std::move(arr1);
+    
+    EXPECT_EQ(arr2.size(), 5);
+    EXPECT_EQ(arr2[0], "one");
+    EXPECT_EQ(arr2[1], "two");
+    EXPECT_EQ(arr2[2], "three");
+    EXPECT_EQ(arr2[3], "four");
+    EXPECT_EQ(arr2[4], "five");
+    
+    EXPECT_TRUE(arr1.empty());
+    EXPECT_EQ(arr1.size(), 0);
+}
+
+TEST(Assignment, SelfAssignment)
+{
+    ArrayT<int> arr = {10, 20, 30};
+    
+    arr = arr; 
+    
+    EXPECT_EQ(arr.size(), 3);
+    EXPECT_EQ(arr[0], 10);
+    EXPECT_EQ(arr[1], 20);
+    EXPECT_EQ(arr[2], 30);
+}
+
