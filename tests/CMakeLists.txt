@@ -7,7 +7,11 @@ add_executable(EigenDeterminant eigen_matrix.cpp)
 target_link_libraries(EigenDeterminant Eigen3::Eigen)
 
 add_executable(UnitTests unit_tests.cpp)
-target_include_directories(UnitTests PRIVATE ${CMAKE_SOURCE_DIR}/include)
+target_include_directories(UnitTests PRIVATE
+    ${PROJECT_SOURCE_DIR}/tests
+    ${PROJECT_SOURCE_DIR}/tests/array
+    ${PROJECT_SOURCE_DIR}/include
+)
 
 target_link_libraries(UnitTests PRIVATE
    gtest

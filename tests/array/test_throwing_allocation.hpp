@@ -3,10 +3,10 @@
 #include <gtest/gtest.h>
 
 #include "signature.hpp"
+#include "common.hpp"
 #include "types_for_test.hpp"
 
-
-std::size_t throws_at = 0;
+inline std::size_t throws_at = 0;
 
 struct AllocException : public std::bad_alloc {};
 
@@ -26,7 +26,6 @@ inline void ThrowRandom() {
     const int kLimit = 75;
     if (GenerateRandomInt(0, 100) < kLimit) { ThrowNext(); }
 }
-
 
 void* operator new(std::size_t size, const std::nothrow_t&) noexcept {
     return malloc(size);
@@ -61,7 +60,6 @@ void operator delete[](void* data) noexcept {
 void operator delete[](void* data, std::size_t) noexcept {
     free(data);
 }
-
 
 template <typename T>
 using ArrayT = signature::ArrayT<T>;
