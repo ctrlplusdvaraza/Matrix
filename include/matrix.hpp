@@ -5,6 +5,7 @@
 #include <concepts>
 
 #include "common.hpp"
+#include "array.hpp"
 
 namespace mtx {
 
@@ -20,7 +21,7 @@ class Matrix {
     Matrix(std::size_t n_rows, std::size_t n_cols, const T& elem)
         : data_(n_rows, Array<T>(n_cols, elem)) {}
 
-    Matrix(std::initializer_list<std::initializer_list<T>> init_lists) {
+    Matrix(std::initializer_list<std::initializer_list<T>> ilist) {
         validate_rectangular(ilist);
         data_ = Array<Array<T>>(ilist.begin(), ilist.end());
     }
@@ -143,8 +144,6 @@ class Matrix {
 
     // find row with max abs elem in column
     std::size_t get_row_max_value(std::size_t column, std::size_t start_row) const {
-        assert(column < n_cols());
-
         std::size_t result_row_idx = start_row;
         T result_value = std::fabs(data_[start_row][column]);
 
@@ -161,9 +160,6 @@ class Matrix {
     }
 
     void add_row_to_row(std::size_t dst_row_idx, std::size_t src_row_idx, const T& mul = T(1.0)) {
-        assert(dst_row_idx < n_rows());
-        assert(src_row_idx < n_rows());
-
         data_[dst_row_idx] += data_[src_row_idx] * mul;
     }
 
