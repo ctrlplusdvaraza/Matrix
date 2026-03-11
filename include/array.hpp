@@ -5,6 +5,7 @@
 #include <functional>
 #include <initializer_list>
 #include <iterator>
+#include <new>
 #include <stdexcept>
 #include <utility>
 
@@ -140,6 +141,11 @@ class Array : private details::ArrayBuffer<T> {
         return *this;
     }
 
+    bool operator==(const Array& other) const noexcept {
+        return size() == other.size() &&
+               std::equal(data_, data_ + size(), other.data_);
+    }
+    
     void swap(Array& other) noexcept {
         std::swap(data_, other.data_);
         std::swap(size_, other.size_);
