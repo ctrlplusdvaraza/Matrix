@@ -41,8 +41,6 @@ class Matrix {
 
     const Array<T>& operator[](const std::size_t idx) const { return data_[idx]; }
 
-    const RectangularArray<T>& data() const { return data_; }
-
   public: // capacity
     std::size_t n_rows() const { return data_.n_rows(); }
     std::size_t n_cols() const { return data_.n_cols(); }
