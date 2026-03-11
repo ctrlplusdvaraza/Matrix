@@ -1,20 +1,18 @@
 #pragma once
 
 #include <algorithm>
-#include <iostream>
+#include <cstddef>
+#include <functional>
+#include <initializer_list>
 #include <iterator>
+#include <new>
+#include <stdexcept>
 #include <utility>
-#include <iterator>
 
-namespace mtx {
+namespace mtx::details {
 
 template <typename T>
 class ArrayBuffer {
-  protected:
-    T* data_ = nullptr;
-    std::size_t size_ = 0;
-    std::size_t capacity_ = 0;
-
   protected:
     ArrayBuffer() = default;
 
@@ -24,17 +22,12 @@ class ArrayBuffer {
 
     ArrayBuffer& operator=(const ArrayBuffer&) = delete;
 
-    ArrayBuffer(ArrayBuffer&& other) noexcept
-        : data_(other.data_), size_(other.size_), capacity_(other.capacity_) {
-        other.data_ = nullptr;
-        other.size_ = 0;
-        other.capacity_ = 0;
+    ArrayBuffer(ArrayBuffer&& other) noexcept {
+        swap(other);
     };
 
     ArrayBuffer& operator=(ArrayBuffer&& other) noexcept {
-        std::swap(data_, other.data_);
-        std::swap(size_, other.size_);
-        std::swap(capacity_, other.capacity_);
+        swap(other);
         return *this;
     }
 
@@ -47,6 +40,12 @@ class ArrayBuffer {
     void construct(T* ptr, const T& value) { new (ptr) T(value); }
 
     void construct(T* ptr, T&& value) { new (ptr) T(std::move(value)); }
+
+    void swap(ArrayBuffer& other) noexcept {
+        std::swap(data_, other.data_);
+        std::swap(size_, other.size_);
+        std::swap(capacity_, other.capacity_);
+    }
 
   private:
     static T* allocate(std::size_t size) {
@@ -63,46 +62,33 @@ class ArrayBuffer {
             ++begin;
         }
     }
+
+  protected:
+    T* data_ = nullptr;
+    std::size_t size_ = 0;
+    std::size_t capacity_ = 0;
 };
 
 template <typename T>
 class Array : private ArrayBuffer<T>{
-  private:
-    using ArrayBuffer<T>::data_;
-    using ArrayBuffer<T>::size_;
-    using ArrayBuffer<T>::capacity_;
-    using ArrayBuffer<T>::construct;
-
   public:
     Array() = default;
     
-    Array(std::initializer_list<T> init_list) : ArrayBuffer(init_list.size()) {
-        for (const auto& item : init_list) {
-            construct(data_ + size_, item);
-            ++size_;
-        }
+    Array(std::initializer_list<T> init_list) : ArrayBuffer<T>(init_list.size()) {
+        fill_data(init_list.begin(), init_list.end());
     }
 
     template <std::forward_iterator Iter>
-    Array(Iter elems_begin, Iter elems_end) : ArrayBuffer(std::distance(elems_begin, elems_end)) {
-        for (auto iter = elems_begin; iter != elems_end; ++iter) {
-            construct(data_ + size_, *iter);
-            ++size_;
-        }
+    Array(Iter elems_begin, Iter elems_end) : ArrayBuffer<T>(std::distance(elems_begin, elems_end)) {
+        fill_data(elems_begin, elems_end);
     }
 
-    Array(std::size_t size, const T& value = T{}) : ArrayBuffer(size) { 
-        while (size_ < capacity_) {
-            construct(data_ + size_, value);
-            ++size_;
-        }        
+    Array(std::size_t size, const T& value = T{}) : ArrayBuffer<T>(size) { 
+        fill_data(value);     
     }
 
-    Array(const Array& other) : ArrayBuffer(other.size_) {
-        while (size_ < other.size_) {
-            construct(data_ + size_, other.data_[size_]);
-            ++size_;
-        }
+    Array(const Array& other) : ArrayBuffer<T>(other.size_) {
+        fill_data(other.data_);
     }
 
     Array& operator=(const Array& other) {
@@ -111,68 +97,114 @@ class Array : private ArrayBuffer<T>{
         return *this;
     }
 
-    Array(Array&& other) = default;
+    Array(Array&& other) noexcept = default;
 
-    Array& operator=(Array&& other) = default;
+    Array& operator=(Array&& other) noexcept = default;
 
     ~Array() = default;
 
   public:
-    T& operator[](std::size_t idx) { return data_[idx]; }
-    const T& operator[](std::size_t idx) const { return data_[idx]; }
+    T& operator[](std::size_t idx) noexcept { return data_[idx]; }
+    const T& operator[](std::size_t idx) const noexcept { return data_[idx]; }
 
-    T* begin() { return data_; }
-    const T* begin() const { return data_; }
+    T* begin() noexcept { return data_; }
+    const T* begin() const noexcept { return data_; }
 
-    T* end() { return begin() + size(); }
-    const T* end() const { return begin() + size(); }
-
-  public:
-    std::size_t size() const { return size_; }
-
-    bool empty() const { return size() == 0; }
+    T* end() noexcept { return begin() + size(); }
+    const T* end() const noexcept { return begin() + size(); }
 
   public:
-    const Array& operator+=(const Array& other) {
+    std::size_t size() const noexcept { return size_; }
+
+    bool empty() const noexcept { return size() == 0; }
+
+  public:
+    Array& operator+=(const Array& other) {
+        if (size() != other.size()) {
+            throw std::invalid_argument("Array sizes must match");
+        }
+
         std::transform(begin(), end(), other.begin(), begin(), std::plus<T>());
         return *this;
     }
 
-    Array operator+(const Array& other) const {
-        Array temp(*this);
-        temp += other;
-        return temp;
-    }
-
-    const Array& operator-=(const Array& other) {
+    Array& operator-=(const Array& other) {
+        if (size() != other.size()) {
+            throw std::invalid_argument("Array sizes must match");
+        }
+        
         std::transform(begin(), end(), other.begin(), begin(), std::minus<T>());
         return *this;
     }
 
-    Array operator-(const Array& other) const {
-        Array temp(*this);
-        temp -= other;
-        return temp;
-    }
-
-    const Array& operator*=(const T& scalar) {
+    Array& operator*=(const T& scalar) {
         for (std::size_t i = 0; i < size(); ++i) {
             (*this)[i] *= scalar;
         }
         return *this;
     }
 
-    Array operator*(const T& scalar) const {
-        Array temp(*this);
-        temp *= scalar;
-        return temp;
-    }
-
-    void swap(Array& other) {
+    void swap(Array& other) noexcept {
         std::swap(data_, other.data_);
         std::swap(size_, other.size_);
         std::swap(capacity_, other.capacity_);
     }
+
+  private:
+    template <typename Iter>
+    void fill_data(Iter begin, Iter end) {
+        for (auto iter = begin; iter != end; ++iter) {
+            construct(data_ + size_, *iter);
+            ++size_;
+        }
+    }
+
+    void fill_data(const T& value) {
+        while (size_ < capacity_) {
+            construct(data_ + size_, value);
+            ++size_;
+        }  
+    }
+
+    void fill_data(T* other_data) {
+        while (size_ < capacity_) {
+            construct(data_ + size_, other_data[size_]);
+            ++size_;
+        }
+    }
+
+  private:
+    using ArrayBuffer<T>::construct;
+    using ArrayBuffer<T>::swap;
+
+  private:
+    using ArrayBuffer<T>::data_;
+    using ArrayBuffer<T>::size_;
+    using ArrayBuffer<T>::capacity_;
 };
 
-}; // namespace mtx
+template <typename T>
+Array<T> operator+(Array<T> lhs, const Array<T>& rhs) {
+    lhs += rhs;
+    return lhs;
+}
+
+template <typename T>
+Array<T> operator-(Array<T> lhs, const Array<T>& rhs) {
+    lhs -= rhs;
+    return lhs;
+}
+
+template <typename T>
+Array<T> operator*(Array<T> arr, const T& value) {
+    arr *= value;
+    return arr;
+}
+
+template <typename T>
+Array<T> operator*(const T& value, Array<T> arr) {
+    arr *= value;
+    return arr;
+}
+
+}; // namespace mtx::details
