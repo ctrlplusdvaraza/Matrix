@@ -2,7 +2,7 @@
 
 #include <Eigen/Dense>
 
-int main () {
+int main() {
     std::size_t size = 0;
     std::cin >> size;
 
@@ -13,5 +13,5 @@ int main () {
         }
     }
 
-    std::cout << matrix.determinant();
+    std::cout << matrix.determinant() << std::endl;
 }
