@@ -9,13 +9,13 @@ class RectangularArray {
   public:
     RectangularArray() = default;
 
-    RectangularArray(std::initializer_list<std::initializer_list<T>> ilist)
-        : data_(ilist.begin(), ilist.end()) {}
-
-    RectangularArray(std::size_t n_rows, std::size_t n_cols) : data_(n_rows, Array<T>(n_cols)) {}
+    RectangularArray(std::size_t n_rows, std::size_t n_cols) : data_(n_rows, Array(n_cols)) {}
 
     RectangularArray(std::size_t n_rows, std::size_t n_cols, const T& elem)
         : data_(n_rows, Array<T>(n_cols, elem)) {}
+
+    RectangularArray(std::initializer_list<std::initializer_list<T>> ilist)
+        : data_(ilist.begin(), ilist.end()) {}
 
     template <std::forward_iterator Iter>
     RectangularArray(std::size_t n_rows, std::size_t n_cols, Iter elems_begin, Iter elems_end)
