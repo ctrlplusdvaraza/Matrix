@@ -11,6 +11,8 @@
 
 namespace mtx::details {
 
+namespace details {
+
 template <typename T>
 class ArrayBuffer {
   protected:
@@ -22,9 +24,7 @@ class ArrayBuffer {
 
     ArrayBuffer& operator=(const ArrayBuffer&) = delete;
 
-    ArrayBuffer(ArrayBuffer&& other) noexcept {
-        swap(other);
-    };
+    ArrayBuffer(ArrayBuffer&& other) noexcept { swap(other); };
 
     ArrayBuffer& operator=(ArrayBuffer&& other) noexcept {
         swap(other);
@@ -69,27 +69,28 @@ class ArrayBuffer {
     std::size_t capacity_ = 0;
 };
 
+} // namespace details
+
 template <typename T>
-class Array : private ArrayBuffer<T>{
+class Array : private details::ArrayBuffer<T> {
   public:
     Array() = default;
-    
-    Array(std::initializer_list<T> init_list) : ArrayBuffer<T>(init_list.size()) {
+
+    Array(std::initializer_list<T> init_list) : details::ArrayBuffer<T>(init_list.size()) {
         fill_data(init_list.begin(), init_list.end());
     }
 
     template <std::forward_iterator Iter>
-    Array(Iter elems_begin, Iter elems_end) : ArrayBuffer<T>(std::distance(elems_begin, elems_end)) {
+    Array(Iter elems_begin, Iter elems_end)
+        : details::ArrayBuffer<T>(std::distance(elems_begin, elems_end)) {
         fill_data(elems_begin, elems_end);
     }
 
-    Array(std::size_t size, const T& value = T{}) : ArrayBuffer<T>(size) { 
-        fill_data(value);     
+    Array(std::size_t size, const T& value = T{}) : details::ArrayBuffer<T>(size) {
+        fill_data(value);
     }
 
-    Array(const Array& other) : ArrayBuffer<T>(other.size_) {
-        fill_data(other.data_);
-    }
+    Array(const Array& other) : details::ArrayBuffer<T>(other.size_) { fill_data(other.data_); }
 
     Array& operator=(const Array& other) {
         Array tmp(other);
@@ -120,19 +121,15 @@ class Array : private ArrayBuffer<T>{
 
   public:
     Array& operator+=(const Array& other) {
-        if (size() != other.size()) {
-            throw std::invalid_argument("Array sizes must match");
-        }
+        if (size() != other.size()) { throw std::invalid_argument("Array sizes must match"); }
 
         std::transform(begin(), end(), other.begin(), begin(), std::plus<T>());
         return *this;
     }
 
     Array& operator-=(const Array& other) {
-        if (size() != other.size()) {
-            throw std::invalid_argument("Array sizes must match");
-        }
-        
+        if (size() != other.size()) { throw std::invalid_argument("Array sizes must match"); }
+
         std::transform(begin(), end(), other.begin(), begin(), std::minus<T>());
         return *this;
     }
@@ -151,6 +148,9 @@ class Array : private ArrayBuffer<T>{
     }
 
   private:
+    using details::ArrayBuffer<T>::construct;
+    using details::ArrayBuffer<T>::swap;
+
     template <typename Iter>
     void fill_data(Iter begin, Iter end) {
         for (auto iter = begin; iter != end; ++iter) {
@@ -163,7 +163,7 @@ class Array : private ArrayBuffer<T>{
         while (size_ < capacity_) {
             construct(data_ + size_, value);
             ++size_;
-        }  
+        }
     }
 
     void fill_data(T* other_data) {
@@ -174,13 +174,9 @@ class Array : private ArrayBuffer<T>{
     }
 
   private:
-    using ArrayBuffer<T>::construct;
-    using ArrayBuffer<T>::swap;
-
-  private:
-    using ArrayBuffer<T>::data_;
-    using ArrayBuffer<T>::size_;
-    using ArrayBuffer<T>::capacity_;
+    using details::ArrayBuffer<T>::data_;
+    using details::ArrayBuffer<T>::size_;
+    using details::ArrayBuffer<T>::capacity_;
 };
 
 template <typename T>
@@ -207,4 +203,4 @@ Array<T> operator*(const T& value, Array<T> arr) {
     return arr;
 }
 
-}; // namespace mtx::details
+}; // namespace mtx
