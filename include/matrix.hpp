@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cmath>
 #include <concepts>
+#include <cassert>
 
 #include "common.hpp"
 #include "rectangular_array.hpp"
@@ -37,9 +38,9 @@ class Matrix {
     static Matrix<T> identity(const std::size_t size) { return diag(size, T(1.0)); }
 
   public: // element access
-    Array<T>& operator[](const std::size_t idx) { return data_[idx]; }
+    details::Array<T>& operator[](const std::size_t idx) { return data_[idx]; }
 
-    const Array<T>& operator[](const std::size_t idx) const { return data_[idx]; }
+    const details::Array<T>& operator[](const std::size_t idx) const { return data_[idx]; }
 
   public: // capacity
     std::size_t n_rows() const { return data_.n_rows(); }
@@ -125,7 +126,7 @@ class Matrix {
     }
 
   private:
-    RectangularArray<T> data_{};
+    details::RectangularArray<T> data_{};
 };
 
 template <FloatingPoint T>
