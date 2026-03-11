@@ -5,11 +5,10 @@
 #include <functional>
 #include <initializer_list>
 #include <iterator>
-#include <new>
 #include <stdexcept>
 #include <utility>
 
-namespace mtx::details {
+namespace mtx {
 
 namespace details {
 

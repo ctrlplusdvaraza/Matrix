@@ -1,11 +1,10 @@
-#include <istream>
-#include <sstream>
 #include <iostream>
-#include <vector>
 
-#include <matrix.hpp>
+#include "array.hpp"
+#include "common.hpp"
+#include "matrix.hpp"
 
-int main () {
+int main() {
     std::size_t size = 0;
     if (!scan_until_next_line(std::cin, size)) {
         std::cerr << "failed to scan size\n";
@@ -16,11 +15,11 @@ int main () {
     for (std::size_t i = 0; i < size; i++) {
         for (std::size_t j = 0; j < size; j++) {
             if (!scan_until_next_line(std::cin, matrix[i][j])) {
-                std::cerr << "failed to scan matrix[" << i << "][" << j << "]\n"; 
+                std::cerr << "failed to scan matrix[" << i << "][" << j << "]" << std::endl;
                 return 1;
             }
         }
     }
 
-    std::cout << matrix.determinant();
+    std::cout << matrix.determinant() << std::endl;
 }
