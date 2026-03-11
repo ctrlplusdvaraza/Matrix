@@ -9,7 +9,7 @@
 #include <stdexcept>
 #include <utility>
 
-namespace mtx {
+namespace mtx::details {
 
 namespace details {
 
