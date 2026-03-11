@@ -1,10 +1,13 @@
 #pragma once
 
 #include <algorithm>
-#include <iostream>
+#include <cstddef>
+#include <functional>
+#include <initializer_list>
 #include <iterator>
+#include <new>
+#include <stdexcept>
 #include <utility>
-#include <iterator>
 
 namespace mtx::details {
 
@@ -117,11 +120,19 @@ class Array : private ArrayBuffer<T>{
 
   public:
     Array& operator+=(const Array& other) {
+        if (size() != other.size()) {
+            throw std::invalid_argument("Array sizes must match");
+        }
+
         std::transform(begin(), end(), other.begin(), begin(), std::plus<T>());
         return *this;
     }
 
     Array& operator-=(const Array& other) {
+        if (size() != other.size()) {
+            throw std::invalid_argument("Array sizes must match");
+        }
+        
         std::transform(begin(), end(), other.begin(), begin(), std::minus<T>());
         return *this;
     }
